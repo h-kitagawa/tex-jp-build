@@ -1016,14 +1016,22 @@ unsigned char *ptenc_from_internal_enc_string_to_utf8(const unsigned char *is)
             if (i1 == '\0') goto end;
             continue;
         case 2:
-            i2 = is[++i]; if (i2 == '\0') break;
+            i2 = is[++i]; 
+		    if (i2 == '\0') {
+			   buffer[last++] = i1;
+			   break;
+			}
             u = JIStoUCS2(toJIS(HILO(i1,i2)));
+		    if (u == 0) { /* outside JIS X 0208 */
+			   buffer[last++] = i1;
+			   buffer[last++] = i2;
+			   continue;    
+			 }   
             break;
         default:
             u = U_REPLACEMENT_CHARACTER;
             break;
         }
-
         write_multibyte(UCStoUTF8(u));
     }
     buffer[last] = '\0';
