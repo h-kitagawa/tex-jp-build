@@ -188,6 +188,19 @@ recorder_record_output (const_string name)
     recorder_record_name ("OUTPUT", name);
 }
 
+
+void
+print_nameoffile_to_stderr(const char* desc)
+{
+        fprintf(stderr, "FILENAME (%s) [", desc);
+        for (int i=1;i<=namelength; i++) {
+	   unsigned char c=*(nameoffile+i);
+	   if (c>=' ' && c<127) fprintf(stderr, "%c", c);
+	   else fprintf(stderr, "[%2x]", c);
+	}
+        fprintf(stderr, "] (%s)\n",nameoffile+1);
+}
+
 /* Open input file *F_PTR, using the kpathsea format FILEFMT and passing
    FOPEN_MODE to fopen.  The filename is in `nameoffile+1'.  We return
    whether or not the open succeeded.  If it did, `nameoffile' is set to
@@ -197,9 +210,6 @@ boolean
 open_input (FILE **f_ptr, int filefmt, const_string fopen_mode)
 {
     string fname = NULL;
-#if defined(PTEX) && !defined(WIN32)
-    string fname0;
-#endif
 #ifdef FUNNY_CORE_DUMP
     /* This only applies if a preloaded TeX/Metafont is being made;
        it allows automatic creation of the core dump (typing ^\ loses
@@ -215,22 +225,14 @@ open_input (FILE **f_ptr, int filefmt, const_string fopen_mode)
     if (fullnameoffile)
         free(fullnameoffile);
     fullnameoffile = NULL;
-    
+
+    print_nameoffile_to_stderr("input  pre  ");
+
     /* Look in -output-directory first, if the filename is not
        absolute.  This is because .aux and other such files will get
        written to the output directory, and we have to be able to read
        them from there.  We only look for the name as-is.  */
 
-#if defined(PTEX) && !defined(WIN32)
-    fname0 = ptenc_from_internal_enc_string_to_utf8(nameoffile + 1);
-    if (fname0) {
-        free (nameoffile);
-        namelength = strlen (fname0);
-        nameoffile = xmalloc (namelength + 2);
-        strcpy (nameoffile + 1, fname0);
-        free (fname0);
-    }
-#endif
     if (output_directory && !kpse_absolute_p (nameoffile+1, false)) {
         fname = concat3 (output_directory, DIR_SEP_STRING, nameoffile + 1);
         *f_ptr = fopen (fname, fopen_mode);
@@ -244,13 +246,6 @@ open_input (FILE **f_ptr, int filefmt, const_string fopen_mode)
         }
 #endif
         if (*f_ptr) {
-#if defined(PTEX) && !defined(WIN32)
-            fname0 = ptenc_from_utf8_string_to_internal_enc(fname);
-            if (fname0) {
-                free (fname);
-                fname = fname0;
-            }
-#endif
             free (nameoffile);
             namelength = strlen (fname);
             nameoffile = xmalloc (namelength + 2);
@@ -308,13 +303,6 @@ open_input (FILE **f_ptr, int filefmt, const_string fopen_mode)
                 *f_ptr = xfopen (fname, fopen_mode);
 
                 /* kpse_find_file always returns a new string. */
-#if defined(PTEX) && !defined(WIN32)
-                fname0 = ptenc_from_utf8_string_to_internal_enc(fname);
-                if (fname0) {
-                    free (fname);
-                    fname = fname0;
-                }
-#endif
                 free (nameoffile);
                 namelength = strlen (fname);
                 nameoffile = xmalloc (namelength + 2);
@@ -340,7 +328,9 @@ open_input (FILE **f_ptr, int filefmt, const_string fopen_mode)
         } else if (filefmt == kpse_ofm_format) {
             tfmtemp = getc (*f_ptr);
         }
-    }            
+    }
+
+    print_nameoffile_to_stderr("input  final");
 
     return *f_ptr != NULL;
 }
@@ -392,19 +382,14 @@ open_output (FILE **f_ptr, const_string fopen_mode)
 #endif
     boolean absolute = kpse_absolute_p(nameoffile+1, false);
 
+    print_nameoffile_to_stderr("output pre  ");
+
     /* If we have an explicit output directory, use it. */
     if (output_directory && !absolute) {
         fname = concat3(output_directory, DIR_SEP_STRING, nameoffile + 1);
     } else {
         fname = nameoffile + 1;
     }
-#if defined(PTEX) && !defined(WIN32)
-    fname0 = ptenc_from_internal_enc_string_to_utf8(fname);
-    if (fname0) {
-        if (fname != nameoffile + 1) free(fname);
-        fname = fname0;
-    }
-#endif
 
     /* Is the filename openable as given?  */
     *f_ptr = fopen (fname, fopen_mode);
@@ -423,13 +408,6 @@ open_output (FILE **f_ptr, const_string fopen_mode)
     /* If this succeeded, change nameoffile accordingly.  */
     if (*f_ptr) {
         if (fname != nameoffile + 1) {
-#if defined(PTEX) && !defined(WIN32)
-            fname0 = ptenc_from_utf8_string_to_internal_enc(fname);
-            if (fname0) {
-                free(fname);
-                fname = fname0;
-            }
-#endif
             free (nameoffile);
             namelength = strlen (fname);
             nameoffile = xmalloc (namelength + 2);
@@ -439,6 +417,9 @@ open_output (FILE **f_ptr, const_string fopen_mode)
     }
     if (fname != nameoffile +1)
         free(fname);
+
+    print_nameoffile_to_stderr("output final");
+
     return *f_ptr != NULL;
 }
 

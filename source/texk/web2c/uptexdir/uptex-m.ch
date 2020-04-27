@@ -725,17 +725,8 @@ if (cur_cmd>=kanji)and(cur_cmd<=hangul) then
 
 @x
   if (cur_cmd=kanji)or(cur_cmd=kana)or(cur_cmd=other_kchar) then {is kanji}
-    begin str_room(2);
-    append_char(Hi(cur_chr)); {kanji upper byte}
-    append_char(Lo(cur_chr)); {kanji lower byte}
 @y
   if (cur_cmd>=kanji)and(cur_cmd<=hangul) then {|wchar_token|}
-    begin str_room(4); {4 is maximum}
-    cur_chr:=toBUFF(cur_chr);
-    if BYTE1(cur_chr)<>0 then append_char(BYTE1(cur_chr));
-    if BYTE2(cur_chr)<>0 then append_char(BYTE2(cur_chr));
-    if BYTE3(cur_chr)<>0 then append_char(BYTE3(cur_chr));
-                              append_char(BYTE4(cur_chr));
 @z
 
 @x

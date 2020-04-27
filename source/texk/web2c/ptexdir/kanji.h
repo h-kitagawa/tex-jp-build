@@ -5,8 +5,8 @@
 #define KANJI_H
 #include "cpascal.h"
 #include <ptexenc/ptexenc.h>
-#ifdef epTeX
 #include <ptexenc/unicode.h>
+#ifdef epTeX
 #define getintone(w) ((w).cint1)
 #define setintone(w,a) ((w).cint1=(a))
 #endif
