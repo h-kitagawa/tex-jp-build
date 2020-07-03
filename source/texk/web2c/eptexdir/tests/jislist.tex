@@ -1,0 +1,26 @@
+%#!ptex
+
+\tracinglostchars=3
+\catcode`\@=11
+\newcount\ku \ku=1
+\newcount\ten
+\parindent0pt\parskip5pt
+\ifx\kchar\undefined\let\kchar=\char\fi % \kchar==\char in [e-]pTeX
+\def\PAR{\par}
+\loop\ifnum\ku<95
+ {\count4=\ku\multiply\count4by256 \advance\count4"2020
+  \PAR\vrule\hskip1zw\vrule\ten=1
+  \loop\ifnum\ten<95
+    \count@=\count4 \advance\count@\ten
+    \hbox to1zw{\kchar\jis\count@\hss}\vrule
+    \advance\ten1
+    \count2=\ten\divide\count2by32\multiply\count2by32
+    \ifnum\count2=\ten \hfill\break\vrule\fi
+  \repeat
+  \global\advance\ku1}
+\repeat
+
+\kchar"800
+
+\bye
+
