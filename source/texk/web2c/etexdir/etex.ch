@@ -1500,18 +1500,43 @@ if eTeX_ex then
 %---------------------------------------
 @x [30] m.581 l.11282 char_warning - e-TeX tracing
 begin if tracing_lost_chars>0 then
+  begin begin_diagnostic;
+  print_nl("Missing character: There is no ");
 @y
 var old_setting: integer; {saved value of |tracing_online|}
 begin if tracing_lost_chars>0 then
  begin old_setting:=tracing_online;
  if eTeX_ex and(tracing_lost_chars>1) then tracing_online:=1;
+ if tracing_lost_chars > 2 then
+   print_err("Missing character: There is no ")
+ else begin
+   begin_diagnostic;
+   print_nl("Missing character: There is no ")
+   end;
 @z
 %---------------------------------------
 @x [30] m.581 l.11289 char_warning - e-TeX tracing
+  print_ASCII(c); print(" in font ");
+@y
+  print_ASCII(c);
+  if tracing_lost_chars > 2 then
+    begin print(" ("); print_hex(c); print(")"); end;
+  print(" in font ");
+@z
+@x
+  slow_print(font_name[f]); print_char("!"); end_diagnostic(false);
+  end;
+@y
+  slow_print(font_name[f]); print_char("!");
+@z
+@x [30] m.581 l.11289 char_warning - e-TeX tracing
 end;
 @y
- tracing_online:=old_setting;
- end;
+  tracing_online:=old_setting;
+  if tracing_lost_chars > 2 then
+    begin help0; error; end
+  else end_diagnostic(false);
+  end;
 end;
 @z
 %---------------------------------------

@@ -121,6 +121,12 @@ var old_setting: integer; {saved value of |tracing_online|}
 @y
 @z
 
+@x [30.581]
+  print_ASCII(c);
+@y
+  print_ASCII(c); print(" in font ");
+@z
+
 @x [32.619]
 save_loc:=dvi_offset+dvi_ptr; base_line:=cur_v;
 prev_p:=this_box+list_offset;
