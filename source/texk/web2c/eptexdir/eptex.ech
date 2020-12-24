@@ -26,8 +26,8 @@
 @y
 @d eTeX_version_string=='-2.6' {current \eTeX\ version}
 @#
-@d epTeX_version_string=='-191112'
-@d epTeX_version_number==191112
+@d epTeX_version_string=='-201224'
+@d epTeX_version_number==201224
 @z
 
 @x e-pTeX: banner
@@ -68,6 +68,22 @@ In \epTeX\ the |subtype| field is |qi(16*box_lr+box_dir)|.
 @y
 @d box_dir(#) == ((qo(subtype(#)))mod 16 - dir_max) {direction of a box}
 @d set_box_dir(#) == subtype(#):=box_lr(#)*16+set_box_dir_end
+@z
+
+@x \insertxkanjiskip
+@d glue_pars=21 {total number of glue parameters}
+@y
+@d manual_xkanji_skip_subtype=21 {subtype only}
+@d glue_pars=21 {total number of glue parameters}
+@z
+
+@x \insertxkanjiskip
+jfm_skip: print("refer from jfm");
+othercases print("[unknown glue parameter!]")
+@y
+jfm_skip: print("refer from jfm");
+manual_xkanji_skip_subtype: print("xkanjiskip, determined later");
+othercases print("[unknown glue parameter!]")
 @z
 
 @x [17]
@@ -288,6 +304,7 @@ last_node_type:=-1;
 last_node_type:=-1; last_node_subtype:=-1;
 @z
 
+
 @x [45.996] l.19420
 last_node_type:=type(p)+1;
 @y
@@ -297,6 +314,63 @@ else if type(p)<disp_node then last_node_type:=type(p)
 else last_node_type:=type(p)-1; {no |disp_node| in a vertical list}
 last_node_subtype:=subtype(p);
 @z
+
+@x [47] mskip_code is comverted to 6 by fam256.ch
+@d mskip_code=5 {identifies \.{\\mskip}}
+@y
+@d mskip_code=5 {identifies \.{\\mskip}}
+@d manual_xkanji_skip_code=7 {identifies \.{\\insertxkanjiskip}}
+@z
+
+@x [47] \insertxkanjiskip
+  ss_code:print_esc("hss");
+  othercases print_esc("hfilneg")
+@y
+  ss_code:print_esc("hss");
+  fil_neg_code:print_esc("hfilneg");
+  othercases print_esc("insertxkanjiskip")
+@z
+
+@x [47] \insertxkanjiskip
+procedure append_glue;
+var s:small_number; {modifier of skip command}
+@y
+procedure append_glue;
+var s:small_number; {modifier of skip command}
+n:pointer;
+@z
+
+@x [47] \insertxkanjiskip
+mskip_code: scan_glue(mu_val);
+end; {now |cur_val| points to the glue specification}
+tail_append(new_glue(cur_val));
+inhibit_glue_flag := false;
+if s>=skip_code then
+  begin decr(glue_ref_count(cur_val));
+  if s>skip_code then subtype(tail):=mu_glue;
+  end;
+@y
+mskip_code: scan_glue(mu_val);
+end; {now |cur_val| points to the glue specification}
+if s=manual_xkanji_skip_code then
+  begin if scan_keyword("late") then
+    begin n:=new_glue(zero_glue);
+    subtype(n):=manual_xkanji_skip_subtype+1;
+    end
+  else n:=new_param_glue(xkanji_skip_code);
+  tail_append(n); inhibit_glue_flag :=true;
+  @<Scan an optional space@>;
+  end
+else
+  begin tail_append(new_glue(cur_val));
+  inhibit_glue_flag := false;
+  if s>=skip_code then
+    begin decr(glue_ref_count(cur_val));
+    if s>skip_code then subtype(tail):=mu_glue;
+    end;
+end;
+@z
+
 
 @x [47.1079] l.20920
 @!fd:boolean; {a final |disp_node| pair?}
@@ -612,6 +686,7 @@ else reverse:=l;
     end
   else begin q:=link(p); link(p):=l; l:=p; p:=q; end;
 @z
+
 @x e-pTeX: reverse nodes of an hlist l.28010
 othercases goto next_p
 @y
@@ -688,6 +763,58 @@ if_font_char_code:begin scan_font_ident; n:=cur_val;
   end;
 @z
 
+@x \insertxkanjiskip
+  if (type(link(p))=glue_node)and(subtype(link(p))=jfm_skip+1) then
+  begin v:=link(p); link(p):=link(v);
+  fast_delete_glue_ref(glue_ptr(v)); free_node(v,small_node_size);
+  end
+@y
+  if type(link(p))=glue_node then
+    begin if subtype(link(p))=jfm_skip+1 then
+      begin v:=link(p); link(p):=link(v);
+      fast_delete_glue_ref(glue_ptr(v)); free_node(v,small_node_size);
+      end
+    else if subtype(link(p))=manual_xkanji_skip_subtype+1 then
+      begin fast_delete_glue_ref(glue_ptr(link(p))); add_glue_ref(s);
+      glue_ptr(link(p)):=s; subtype(link(p)):=xkanji_skip_code+1;
+      end
+    end
+@z
+
+@x
+    mark_node,adjust_node,ins_node,whatsit_node:
+      {These nodes are vanished when typeset is done}
+      do_nothing;
+    othercases insert_skip:=no_skip;
+@y
+    mark_node,adjust_node,ins_node,whatsit_node:
+      {These nodes are vanished when typeset is done}
+      do_nothing;
+    glue_node: if subtype(p)=manual_xkanji_skip_subtype+1 then
+      begin fast_delete_glue_ref(glue_ptr(p)); add_glue_ref(s);
+      glue_ptr(p):=s; subtype(p):=xkanji_skip_code+1;
+      end;
+    othercases insert_skip:=no_skip;
+@z
+
+@x
+if not is_char_node(q)and(type(q)=glue_node)and(subtype(q)=jfm_skip+1) then
+  begin fast_delete_glue_ref(glue_ptr(q));
+  glue_ptr(q):=zero_glue; add_glue_ref(zero_glue);
+  end;
+@y
+if not is_char_node(q)and(type(q)=glue_node) then
+  begin if subtype(q)=jfm_skip+1 then
+    begin fast_delete_glue_ref(glue_ptr(q));
+    glue_ptr(q):=zero_glue; add_glue_ref(zero_glue);
+    end
+  else if subtype(q)=manual_xkanji_skip_subtype+1 then
+    begin fast_delete_glue_ref(glue_ptr(q)); add_glue_ref(s);
+    glue_ptr(q):=s; subtype(q):=xkanji_skip_code+1;
+    end
+  end;
+@z
+
 @x
 procedure print_direction(@!d:integer); {print the direction represented by d}
 @y
@@ -721,6 +848,8 @@ primitive("currentspacingmode",last_item,current_spacing_mode_code);
 @!@:current_spacing_mode_}{\.{\\currentspacingmode} primitive@>
 primitive("currentxspacingmode",last_item,current_xspacing_mode_code);
 @!@:current_xspacing_mode_}{\.{\\currentxspacingmode} primitive@>
+primitive("insertxkanjiskip",hskip,manual_xkanji_skip_code);
+@!@:insert_xkanji_skip_}{\.{\\insertxkanjiskip} primitive@>
 
 @ @<Cases of |last_item| for |print_cmd_chr|@>=
 current_spacing_mode_code: print_esc("currentspacingmode");
