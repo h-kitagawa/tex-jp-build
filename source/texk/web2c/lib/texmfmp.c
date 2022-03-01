@@ -830,9 +830,12 @@ maininit (int ac, string *av)
   enc = kpse_var_value("command_line_encoding");
   get_command_line_args_utf8(enc, &argc, &argv);
 #endif
-#if IS_pTeX && !IS_upTeX && !defined(WIN32)
+
+#if IS_pTeX && !defined(WIN32)
+   fprintf(stderr, "maininit: %d\n", get_internal_enc());
   ptenc_get_command_line_args(&argc, &argv);
 #endif
+
 
   /* If the user says --help or --version, we need to notice early.  And
      since we want the --ini option, have to do it before getting into
@@ -1168,6 +1171,12 @@ void
 topenin (void)
 {
   int i;
+#if IS_pTeX && !defined(WIN32)
+   fprintf(stderr, "t_open_in: %d\n", get_internal_enc());
+  /* ptenc_get_command_line_args(&argc, &argv); */
+  for (int i=0; i<argc; i++)
+     fprintf(stderr, "argv[%d]: [%s]\n", i, argv[i]);
+#endif
 
 #ifdef XeTeX
   static UFILE termin_file;
