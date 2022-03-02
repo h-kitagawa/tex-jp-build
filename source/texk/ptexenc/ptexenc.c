@@ -915,6 +915,12 @@ void clear_infile_enc(FILE *fp)
 {
     infile_enc[fileno(fp)] = ENC_UNKNOWN;
 }
+long conv_first_line(long pos, long limit, unsigned char *buff, const long buffsize) 
+  /* return new limit */
+{
+   return limit;
+}
+
 #else /* !WIN32 */
 static const_string in_filter = NULL;
 static FILE *piped_fp[NOFILE];
@@ -1124,6 +1130,23 @@ int ptenc_get_command_line_args(int *p_ac, char ***p_av)
          return terminal_enc;
     }
     return 0;
+}
+
+long ptencconvfirstline(long pos, long limit, unsigned char *buff, const long buffsize) 
+  /* return new limit */
+{
+    unsigned char *old, *new_buf; long new_limit, i;
+    if (internal_enc==ENC_UPTEX) return limit; /* no conversion needed */
+    old = xmalloc(limit-pos+2);
+    if (old==NULL) return limit; 
+    strncpy(old, buff+pos, limit-pos+1); old[limit-pos+1]='\0';
+    new_buf = ptenc_from_utf8_string_to_internal_enc(old);
+    if (new_buf==NULL) { free(old); return limit; }
+    new_limit=pos+strlen(new_buf)-1; 
+    if (new_limit>=buffsize) new_limit=buffsize-1;
+    for (i=0;i<strlen(new_buf); i++) buff[pos+i]=new_buf[i];
+    free(old); free(new_buf);
+    return new_limit;
 }
 
 #endif /* !WIN32 */

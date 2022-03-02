@@ -833,7 +833,7 @@ maininit (int ac, string *av)
 
 #if IS_pTeX && !defined(WIN32)
    fprintf(stderr, "maininit: %d\n", get_internal_enc());
-  ptenc_get_command_line_args(&argc, &argv);
+//  ptenc_get_command_line_args(&argc, &argv);
 #endif
 
 
