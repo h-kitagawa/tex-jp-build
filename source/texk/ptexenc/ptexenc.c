@@ -1135,18 +1135,32 @@ int ptenc_get_command_line_args(int *p_ac, char ***p_av)
 long ptencconvfirstline(long pos, long limit, unsigned char *buff, const long buffsize) 
   /* return new limit */
 {
-    unsigned char *old, *new_buf; long new_limit, i;
-    if (internal_enc==ENC_UPTEX) return limit; /* no conversion needed */
-    old = xmalloc(limit-pos+2);
+    unsigned char *old, *new_buf; long new_limit, i; FILE *fp;
+    get_terminal_enc(); new_limit = limit;
+    if (internal_enc==terminal_enc) return new_limit; /* no conversion needed */
+    old = xmalloc(limit-pos+1);
     if (old==NULL) return limit; 
-    strncpy(old, buff+pos, limit-pos+1); old[limit-pos+1]='\0';
-    new_buf = ptenc_from_utf8_string_to_internal_enc(old);
-    if (new_buf==NULL) { free(old); return limit; }
-    new_limit=pos+strlen(new_buf)-1; 
-    if (new_limit>=buffsize) new_limit=buffsize-1;
-    for (i=0;i<strlen(new_buf); i++) buff[pos+i]=new_buf[i];
-    free(old); free(new_buf);
-    return new_limit;
+    strncpy(old, buff+pos, limit-pos); old[limit-pos]='\0';
+      /* fprintf(stderr, "old: ");
+        for (int i=0; i<=limit-pos; i++)
+        if ((old[i]<0x20)||(old[i]>0x7e)) fprintf(stderr, "[%2x]", old[i]);
+        else fprintf(stderr, "%c", old[i]); */
+    fp = fmemopen((void *)old, limit-pos, "r");
+    if (fp != NULL)
+     {
+        new_limit = input_line2(fp, buff, NULL, pos, buffsize, NULL);
+        /* fprintf(stderr, "\nfmemopen: loc = %d || %d -> %d\n", pos, limit, new_limit); */
+        /* fprintf(stderr, "new: ");
+          for (int i=pos; i<=new_limit; i++)
+            if ((buff[i]<0x20)||(buff[i]>0x7e)) fprintf(stderr, "[%2x]", buff[i]);
+            else fprintf(stderr, "%c", buff[i]); */
+        for (i = new_limit+1; (i < new_limit + 5 && i < buffsize) ; i++)
+          buff[i] = '\0';
+      /* fprintf(stderr, "\n"); fflush(stderr); */
+        fclose(fp);
+     }
+   free(old);
+   return new_limit;
 }
 
 #endif /* !WIN32 */

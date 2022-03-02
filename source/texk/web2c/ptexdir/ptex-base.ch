@@ -6720,18 +6720,12 @@ undump_things(char_base[null_font], font_ptr+1-null_font);
 @z
 
 @x -- DEBUG!
-fix_date_and_time;@/
+if end_line_char_inactive then decr(limit)
+else  buffer[limit]:=end_line_char;
 @y
 limit:=ptenc_conv_first_line(loc, limit, buffer, buf_size);
-print_nl("debug 1st line "); print_int(loc); print(" ");
-print_int(limit);
-for k:=loc to limit do begin
-  if (buffer[k]<@"20)or(buffer[k]>@"7e) then
-    begin print("["); print_hex(buffer[k]); print("]"); end
-  else print(buffer[k]);
-end;
-print_nl("");
-fix_date_and_time;@/
+if end_line_char_inactive then decr(limit)
+else  buffer[limit]:=end_line_char;
 @z
 
 @x [51.1337] l.25563 - pTeX:
