@@ -1146,6 +1146,7 @@ long ptencconvfirstline(long pos, long limit, unsigned char *buff, const long bu
         if ((old[i]<0x20)||(old[i]>0x7e)) fprintf(stderr, "[%2x]", old[i]);
         else fprintf(stderr, "%c", old[i]); */
     fp = fmemopen((void *)old, limit-pos, "r");
+    infile_enc[fileno(fp)]=terminal_enc;
     if (fp != NULL)
      {
         new_limit = input_line2(fp, buff, NULL, pos, buffsize, NULL);
