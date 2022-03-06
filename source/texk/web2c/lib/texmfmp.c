@@ -1019,7 +1019,14 @@ maininit (int ac, string *av)
     /* If run like `tex \&foo', reasonable to guess "foo" as the fmt name.  */
     if (!main_input_file) {
       if (argv[1] && *argv[1] == '&') {
+#if IS_pTeX && !defined(WIN32)
+        string new_arg;
+        is_terminalUTF8(); /* To call get_terminal_enc(). return value is not used */
+        new_arg = ptenc_from_utf8_string_to_internal_enc(argv[1]);
+        dump_name = argv[1] + 1; argv[1] = new_arg;
+#else
         dump_name = argv[1] + 1;
+#endif
       }
     }
 
@@ -1200,12 +1207,6 @@ void
 topenin (void)
 {
   int i;
-#if IS_pTeX && !defined(WIN32)
-   fprintf(stderr, "t_open_in: %d\n", get_internal_enc());
-  /* ptenc_get_command_line_args(&argc, &argv); */
-  for (int i=0; i<argc; i++)
-     fprintf(stderr, "argv[%d]: [%s]\n", i, argv[i]);
-#endif
 
 #ifdef XeTeX
   static UFILE termin_file;

@@ -6722,10 +6722,10 @@ undump_things(char_base[null_font], font_ptr+1-null_font);
 @x -- DEBUG!
 fix_date_and_time;@/
 @y
-limit:=ptenc_conv_first_line(loc, limit, buffer, buf_size);
+last:=ptenc_conv_first_line(loc, last, buffer, buf_size);
 print_nl("debug 1st line "); print_int(loc); print(" ");
-print_int(limit);
-for k:=loc to limit do begin
+for k:=0 to last do begin
+  if k=loc then print(">");
   if (buffer[k]<@"20)or(buffer[k]>@"7e) then
     begin print("["); print_hex(buffer[k]); print("]"); end
   else print(buffer[k]);
