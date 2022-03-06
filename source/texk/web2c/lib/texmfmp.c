@@ -1067,12 +1067,15 @@ maininit (int ac, string *av)
     
     /* Provide extension if not there already.  */
 #if IS_pTeX && !defined(WIN32)
+    string new_dump_name;
     is_terminalUTF8(); /* To call get_terminal_enc(). return value is not used */
+    new_dump_name = ptenc_from_utf8_string_to_internal_enc(dump_name);
+    if (!new_dump_name) new_dump_name = (string)dump_name;
     if (name_len > ext_len
         && FILESTRCASEEQ (dump_name + name_len - ext_len, DUMP_EXT)) {
-      with_ext = ptenc_from_utf8_string_to_internal_enc(dump_name);
+      with_ext = new_dump_name;
     } else {
-      with_ext = concat (ptenc_from_utf8_string_to_internal_enc(dump_name), DUMP_EXT);
+      with_ext = concat(new_dump_name, DUMP_EXT);
     }
 #else
     if (name_len > ext_len
@@ -3119,8 +3122,10 @@ getjobname(strnumber name)
     if (c_job_name != NULL)
 #if IS_pTeX && !defined(WIN32)
       {
+        string new_job_name;
         is_terminalUTF8();
-        ret = maketexstring(ptenc_from_utf8_string_to_internal_enc(c_job_name));
+        new_job_name = ptenc_from_utf8_string_to_internal_enc(c_job_name);
+        ret = maketexstring(new_job_name? new_job_name : c_job_name);
       }
 #else
       ret = maketexstring(c_job_name);
