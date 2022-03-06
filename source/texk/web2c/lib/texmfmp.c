@@ -3117,7 +3117,14 @@ getjobname(strnumber name)
 {
     strnumber ret = name; int i, l, p;
     if (c_job_name != NULL)
+#if IS_pTeX && !defined(WIN32)
+      {
+        is_terminalUTF8();
+        ret = maketexstring(ptenc_from_utf8_string_to_internal_enc(c_job_name));
+      }
+#else
       ret = maketexstring(c_job_name);
+#endif
 #if IS_pTeX
     i = strstart[ret]; l = strstart[ret+1];
     while (i<l)

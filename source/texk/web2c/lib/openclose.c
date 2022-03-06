@@ -222,14 +222,6 @@ open_input (FILE **f_ptr, int filefmt, const_string fopen_mode)
        them from there.  We only look for the name as-is.  */
 
 #if defined(PTEX) && !defined(WIN32)
-     fprintf(stderr, "nameoffile: ");
-     for (int i=1; i<strlen(nameoffile); i++)
-     {
-         if ((nameoffile[i]<0x20)||(nameoffile[i]>0x7e))
-             fprintf(stderr, "[%2X]", (unsigned int)(nameoffile[i]&0xFF));
-         else fprintf(stderr, "%c", nameoffile[i]);
-     }
-     fflush(stderr);
     fname0 = ptenc_from_internal_enc_string_to_utf8(nameoffile + 1);
     if (fname0) {
         free (nameoffile);
