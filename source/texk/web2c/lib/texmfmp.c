@@ -1059,12 +1059,22 @@ maininit (int ac, string *av)
     unsigned ext_len = strlen (DUMP_EXT);
     
     /* Provide extension if not there already.  */
+#if IS_pTeX && !defined(WIN32)
+    is_terminalUTF8(); /* To call get_terminal_enc(). return value is not used */
+    if (name_len > ext_len
+        && FILESTRCASEEQ (dump_name + name_len - ext_len, DUMP_EXT)) {
+      with_ext = ptenc_from_utf8_string_to_internal_enc(dump_name);
+    } else {
+      with_ext = concat (ptenc_from_utf8_string_to_internal_enc(dump_name), DUMP_EXT);
+    }
+#else
     if (name_len > ext_len
         && FILESTRCASEEQ (dump_name + name_len - ext_len, DUMP_EXT)) {
       with_ext = dump_name;
     } else {
       with_ext = concat (dump_name, DUMP_EXT);
     }
+#endif
     DUMP_VAR = concat (" ", with_ext); /* adjust array for Pascal */
     DUMP_LENGTH_VAR = strlen (DUMP_VAR + 1);
   } else {
