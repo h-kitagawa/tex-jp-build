@@ -756,6 +756,9 @@ static void parse_first_line (const_string);
 
 /* Parse option flags. */
 static void parse_options (int, string *);
+#if IS_pTeX
+static void parse_options_early (int, string *);
+#endif /* IS_pTeX */
 
 /* Try to figure out if we have been given a filename. */
 static string get_input_file_name (void);
@@ -821,6 +824,9 @@ maininit (int ac, string *av)
 #if (defined(XeTeX) || defined(pdfTeX)) && defined(WIN32)
   kpse_set_program_name (argv[0], NULL);
 #endif
+#if IS_pTeX
+  parse_options_early (argc, argv);
+#endif  
 #if (IS_upTeX || defined(XeTeX) || defined(pdfTeX)) && defined(WIN32)
 /* 
    -cnf-line=command_line_encoding=value cannot give effect because
@@ -1765,6 +1771,43 @@ get_input_file_name (void)
    option table in a variable `long_options'.  */
 #define ARGUMENT_IS(a) STREQ (long_options[option_index].name, a)
 
+#if IS_pTeX
+#define ARGUMENT_IS_EARLY(a) STREQ (long_options_early[option_index].name, a)
+static struct option long_options_early[]
+  = { { DUMP_OPTION,                 1, 0, 0 },
+      { "kanji",                     1, 0, 0 },
+      { "kanji-internal",            1, 0, 0 },
+      { 0, 0, 0, 0 } };
+
+static void
+parse_options_early (int argc, string *argv)
+{
+  int g;   /* `getopt' return code.  */
+  int option_index;
+  int opterr_bk = opterr;
+  opterr = 0;
+  for (;;) {
+    g = getopt_long_only (argc, argv, "+", long_options_early, &option_index);
+    if (g == -1) /* End of arguments, exit the loop.  */
+      break;
+    if (g == '?') { /* Unknown option.  */
+      continue;
+    }
+    assert (g == 0); /* We have no short option names.  */
+    if (ARGUMENT_IS_EARLY ("kanji")) {
+      if (!set_enc_string (optarg, NULL)) {
+        WARNING1 ("Ignoring unknown argument `%s' to --kanji", optarg);
+      }
+    } else { /* "kanji-internal" */ 
+      if (!set_enc_string (NULL, optarg)) {
+        WARNING1 ("Ignoring unknown argument `%s' to --kanji-internal", optarg);
+      }
+    } /* Else it was a flag; getopt has already done the assignment.  */
+  }
+  opterr = opterr_bk; optind = 1;
+}
+#endif /* IS_pTeX */ 
+
 /* SunOS cc can't initialize automatic structs, so make this static.  */
 static struct option long_options[]
   = { { DUMP_OPTION,                 1, 0, 0 },
@@ -1848,7 +1891,7 @@ parse_options (int argc, string *argv)
 {
   int g;   /* `getopt' return code.  */
   int option_index;
-
+  
   for (;;) {
     g = getopt_long_only (argc, argv, "+", long_options, &option_index);
 
@@ -1998,17 +2041,6 @@ parse_options (int argc, string *argv)
       } else {
         WARNING1 ("Ignoring unknown argument `%s' to --interaction", optarg);
       }
-#if IS_pTeX
-    } else if (ARGUMENT_IS ("kanji")) {
-      if (!set_enc_string (optarg, NULL)) {
-        WARNING1 ("Ignoring unknown argument `%s' to --kanji", optarg);
-      }
-    } else if (ARGUMENT_IS ("kanji-internal")) {
-      if (!set_enc_string (NULL, optarg)) {
-        WARNING1 ("Ignoring unknown argument `%s' to --kanji-internal", optarg);
-      }
-#endif
-
     } else if (ARGUMENT_IS ("help")) {
         usagehelp (PROGRAM_HELP, BUG_ADDRESS);
 
