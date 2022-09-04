@@ -697,8 +697,8 @@ othercases goto next_p
 @y
     buffer[last]:=w.b0 mod @"100; buffer[last+1]:=w.b1 mod @"100;
     buffer[last+2]:=w.b2 mod @"100; buffer[last+3]:=w.b3 mod @"100;@/
-    buffer2[last]:=0; buffer2[last+1]:=0;
-    buffer2[last+2]:=0; buffer2[last+3]:=0;
+    buffer2[last]:=w.b0 div @"100; buffer2[last+1]:=w.b1 div @"100;
+    buffer2[last+2]:=w.b2 div @"100; buffer2[last+3]:=w.b3 div @"100;
 @z
 
 @x e-pTeX: \readline
