@@ -85,8 +85,8 @@
 @y
 @d pTeX_version=4
 @d pTeX_minor_version=0
-@d pTeX_revision==".0"
-@d pTeX_version_string=='-p4.0.0' {current \pTeX\ version}
+@d pTeX_revision==".90"
+@d pTeX_version_string=='-p4.0.90' {current \pTeX\ version}
 @#
 @d pTeX_banner=='This is pTeX, Version 3.141592653',pTeX_version_string
 @d pTeX_banner_k==pTeX_banner
@@ -1855,11 +1855,10 @@ begin switch: if loc<=limit then {current line not yet finished}
 @^inner loop@>
 begin switch: if loc<=limit then {current line not yet finished}
   begin cur_chr:=buffer[loc]; incr(loc);
-    if multistrlen(ustringcast(buffer), limit+1, loc-1)=2 then
+    if buffer2[loc-1]=1 then
+    { if (buffer2[loc]=1)and(multistrlen(ustringcast(buffer), limit+1, loc-1)=2) then }
       begin cur_chr:=fromBUFF(ustringcast(buffer), limit+1, loc-1);
       cur_cmd:=kcat_code(kcatcodekey(cur_chr));
-      for l:=loc-1 to loc-2+multistrlen(ustringcast(buffer), limit+1, loc-1) do
-        buffer2[l]:=1;
       incr(loc);
       end
     else reswitch: cur_cmd:=cat_code(cur_chr);
@@ -1970,10 +1969,9 @@ end
 @<Scan a control...@>=
 begin if loc>limit then cur_cs:=null_cs {|state| is irrelevant in this case}
 else  begin k:=loc; cur_chr:=buffer[k]; incr(k);
-  if multistrlen(ustringcast(buffer), limit+1, k-1)=2 then
+  if buffer2[k-1]=1 then
+  { if (buffer2[k]=1)and(multistrlen(ustringcast(buffer), limit+1, k-1)=2) then }
     begin cat:=kcat_code(kcatcodekey(fromBUFF(ustringcast(buffer), limit+1, k-1)));
-    for l:=k-1 to k-2+multistrlen(ustringcast(buffer), limit+1, k-1) do
-      buffer2[l]:=1;
     incr(k);
     end
   else cat:=cat_code(cur_chr);
@@ -2067,10 +2065,9 @@ end
 @y
 @ @<Scan ahead in the buffer...@>=
 begin repeat cur_chr:=buffer[k]; incr(k);
-  if multistrlen(ustringcast(buffer), limit+1, k-1)=2 then
+  if buffer2[k-1]=1 then
+  { if (buffer2[k]=1)and(multistrlen(ustringcast(buffer), limit+1, k-1)=2) then }
     begin cat:=kcat_code(kcatcodekey(fromBUFF(ustringcast(buffer), limit+1, k-1)));
-    for l:=k-1 to k-2+multistrlen(ustringcast(buffer), limit+1, k-1) do
-      buffer2[l]:=1;
     incr(k);
     if (cat=kanji)or(cat=kana) then
       begin if (ptex_lineend mod 2)=0 then state:=skip_blanks_kanji

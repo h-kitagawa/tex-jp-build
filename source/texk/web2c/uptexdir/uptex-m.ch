@@ -387,11 +387,10 @@ if ((kcp mod @'10)>0)and(nrestmultichr(kcp)>0) then p:=p-(kcp mod @'10);
 
 @x
   begin cur_chr:=buffer[loc]; incr(loc);
-    if multistrlen(ustringcast(buffer), limit+1, loc-1)=2 then
+    if buffer2[loc-1]=1 then
+    { if (buffer2[loc]=1)and(multistrlen(ustringcast(buffer), limit+1, loc-1)=2) then }
       begin cur_chr:=fromBUFF(ustringcast(buffer), limit+1, loc-1);
       cur_cmd:=kcat_code(kcatcodekey(cur_chr));
-      for l:=loc-1 to loc-2+multistrlen(ustringcast(buffer), limit+1, loc-1) do
-        buffer2[l]:=1;
       incr(loc);
       end
     else reswitch: cur_cmd:=cat_code(cur_chr);
@@ -399,11 +398,16 @@ if ((kcp mod @'10)>0)and(nrestmultichr(kcp)>0) then p:=p-(kcp mod @'10);
   begin
     cur_chr:=fromBUFF(ustringcast(buffer), limit+1, loc);
     cur_cmd:=kcat_code(kcatcodekey(cur_chr));
-    if (multistrlen(ustringcast(buffer), limit+1, loc)>1) and check_kcat_code(cur_cmd) then begin
-      if (cur_cmd=not_cjk) then cur_cmd:=other_kchar;
-      for l:=loc to loc-1+multistrlen(ustringcast(buffer), limit+1, loc) do
-        buffer2[l]:=1;
-      loc:=loc+multistrlen(ustringcast(buffer), limit+1, loc) end
+    if buffer2[loc]=1 then begin
+      if check_kcat_code(cur_cmd) then begin
+        if (cur_cmd=not_cjk) then cur_cmd:=other_kchar;
+        loc:=loc+multistrlen(ustringcast(buffer), limit+1, loc) end
+      else begin
+        for l:=loc to loc-1+multistrlen(ustringcast(buffer), limit+1, loc) do
+          buffer2[l]:=0;
+        cur_chr:=buffer[loc]; incr(loc); cur_cmd:=cat_code(cur_chr);
+        end
+      end
     else begin
       cur_chr:=buffer[loc]; incr(loc);
       reswitch: cur_cmd:=cat_code(cur_chr);
@@ -436,10 +440,9 @@ hangul_code(mid_kanji):
 
 @x
 else  begin k:=loc; cur_chr:=buffer[k]; incr(k);
-  if multistrlen(ustringcast(buffer), limit+1, k-1)=2 then
+  if buffer2[k-1]=1 then
+  { if (buffer2[k]=1)and(multistrlen(ustringcast(buffer), limit+1, k-1)=2) then }
     begin cat:=kcat_code(kcatcodekey(fromBUFF(ustringcast(buffer), limit+1, k-1)));
-    for l:=k-1 to k-2+multistrlen(ustringcast(buffer), limit+1, k-1) do
-      buffer2[l]:=1;
     incr(k);
     end
   else cat:=cat_code(cur_chr);
@@ -449,11 +452,16 @@ start_cs:
 else  begin k:=loc;
   cur_chr:=fromBUFF(ustringcast(buffer), limit+1, k);
   cat:=kcat_code(kcatcodekey(cur_chr));
-  if (multistrlen(ustringcast(buffer), limit+1, k)>1) and check_kcat_code(cat) then begin
-    if (cat=not_cjk) then cat:=other_kchar;
-    for l:=k to k-1+multistrlen(ustringcast(buffer), limit+1, k) do
-      buffer2[l]:=1;
-    k:=k+multistrlen(ustringcast(buffer), limit+1, k) end
+  if buffer2[k]=1 then begin
+    if check_kcat_code(cat) then begin
+      if (cat=not_cjk) then cat:=other_kchar;
+      k:=k+multistrlen(ustringcast(buffer), limit+1, k) end
+    else begin
+      for l:=k to k-1+multistrlen(ustringcast(buffer), limit+1, k) do
+        buffer2[l]:=0;
+      cur_chr:=buffer[k]; cat:=cat_code(cur_chr); incr(k);
+      end
+    end
   else begin {not multi-byte char}
     cur_chr:=buffer[k];
     cat:=cat_code(cur_chr);
@@ -477,10 +485,9 @@ start_cs:
 
 @x
 begin repeat cur_chr:=buffer[k]; incr(k);
-  if multistrlen(ustringcast(buffer), limit+1, k-1)=2 then
+  if buffer2[k-1]=1 then
+  { if (buffer2[k]=1)and(multistrlen(ustringcast(buffer), limit+1, k-1)=2) then }
     begin cat:=kcat_code(kcatcodekey(fromBUFF(ustringcast(buffer), limit+1, k-1)));
-    for l:=k-1 to k-2+multistrlen(ustringcast(buffer), limit+1, k-1) do
-      buffer2[l]:=1;
     incr(k);
     if (cat=kanji)or(cat=kana) then
       begin if (ptex_lineend mod 2)=0 then state:=skip_blanks_kanji
@@ -491,15 +498,20 @@ begin repeat cur_chr:=buffer[k]; incr(k);
 begin repeat
   cur_chr:=fromBUFF(ustringcast(buffer), limit+1, k);
   cat:=kcat_code(kcatcodekey(cur_chr));
-  if (multistrlen(ustringcast(buffer), limit+1, k)>1) and check_kcat_code(cat) then begin
-    if (cat=not_cjk) then cat:=other_kchar;
-    for l:=k to k-1+multistrlen(ustringcast(buffer), limit+1, k) do
-      buffer2[l]:=1;
-    k:=k+multistrlen(ustringcast(buffer), limit+1, k);
-    if (cat=kanji)or(cat=kana) then
-      begin if (ptex_lineend mod 2)=0 then state:=skip_blanks_kanji
-      else state:=skip_blanks end
-    else if cat=hangul then state:=skip_blanks;
+  if buffer2[k]=1 then begin
+    if check_kcat_code(cat) then begin
+      if (cat=not_cjk) then cat:=other_kchar;
+      k:=k+multistrlen(ustringcast(buffer), limit+1, k);
+      if (cat=kanji)or(cat=kana) then
+        begin if (ptex_lineend mod 2)=0 then state:=skip_blanks_kanji
+        else state:=skip_blanks end
+      else if cat=hangul then state:=skip_blanks;
+      end
+    else begin
+      for l:=k to k-1+multistrlen(ustringcast(buffer), limit+1, k) do
+        buffer2[l]:=0;
+      cur_chr:=buffer[k]; cat:=cat_code(cur_chr); incr(k);
+      end
     end
   else begin {not multi-byte char}
     cur_chr:=buffer[k];

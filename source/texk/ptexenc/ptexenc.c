@@ -666,6 +666,7 @@ static int ungetc4(int c, FILE *fp)
 
 
 static unsigned char *buffer;
+static unsigned char *buffer2;
 static long first, last;
 static boolean combin_voiced_sound(boolean semi)
 {
@@ -678,24 +679,24 @@ static boolean combin_voiced_sound(boolean semi)
     i = get_voiced_sound(i, semi);
     if (i == 0) return false;
     i = toBUFF(fromUCS(i));
-    if (BYTE2(i) != 0) buffer[last-3] = BYTE2(i);
-    /* always */       buffer[last-2] = BYTE3(i);
-    /* always */       buffer[last-1] = BYTE4(i);
+    if (BYTE2(i) != 0) { buffer[last-3] = BYTE2(i); buffer[last-3] = 1; }
+    /* always */         buffer[last-2] = BYTE3(i); buffer[last-2] = 1;
+    /* always */         buffer[last-1] = BYTE4(i); buffer[last-1] = 1;
     return true;
 }
 
 static void write_multibyte(long i)
 {
-    if (BYTE1(i) != 0) buffer[last++] = BYTE1(i);
-    if (BYTE2(i) != 0) buffer[last++] = BYTE2(i);
-    /* always */       buffer[last++] = BYTE3(i);
-    /* always */       buffer[last++] = BYTE4(i);
+    if (BYTE1(i) != 0) { buffer[last] = BYTE1(i); buffer2[last++] = 1; }
+    if (BYTE2(i) != 0) { buffer[last] = BYTE2(i); buffer2[last++] = 1; }
+    /* always */         buffer[last] = BYTE3(i); buffer2[last++] = 1;
+    /* always */         buffer[last] = BYTE4(i); buffer2[last++] = 1;
 }
 
 static void write_hex(int i)
 {
     sprintf((char *) buffer + last, "^^%02x", i);
-    last += 4;
+    buffer2[last++] = 0; buffer2[last++] = 0; buffer2[last++] = 0; buffer2[last++] = 0;
 }
 
 /* getc() with check of broken encoding of UTF-8 */
@@ -707,6 +708,10 @@ static int getcUTF8(FILE *fp)
     ungetc4(c, fp);
     return EOF;
 }
+
+#define write_byte_or_hex(c) \
+  { if (ptex_mode) {buffer[last] = (c); buffer2[last++] = 0; } \
+    else write_hex(c); }
 
 static void get_utf8(int i, FILE *fp)
 {
@@ -739,10 +744,10 @@ static void get_utf8(int i, FILE *fp)
 
     j = (u != 0) ? toBUFF(fromUCS(u)) : 0;
     if (j == 0) { /* can't represent (typically umlaut o in EUC) */
-        write_hex(i);
-        if (i2 != EOF) write_hex(i2);
-        if (i3 != EOF) write_hex(i3);
-        if (i4 != EOF) write_hex(i4);
+        write_byte_or_hex(i);
+        if (i2 != EOF) write_byte_or_hex(i2);
+        if (i3 != EOF) write_byte_or_hex(i3);
+        if (i4 != EOF) write_byte_or_hex(i4);
     } else {
         write_multibyte(j);
     }
@@ -755,7 +760,7 @@ static void get_euc(int i, FILE *fp)
     if (isEUCkanji2(j)) {
         write_multibyte(toBUFF(fromEUC(HILO(i,j))));
     } else {
-        buffer[last++] = i;
+        buffer[last] = i; buffer2[last++] = 0;
         ungetc4(j, fp);
     }
 }
@@ -767,7 +772,7 @@ static void get_sjis(int i, FILE *fp)
     if (isSJISkanji2(j)) {
         write_multibyte(toBUFF(fromSJIS(HILO(i,j))));
     } else {
-        buffer[last++] = i;
+        buffer[last++] = i; buffer2[last++] = 0;
         ungetc4(j, fp);
     }
 }
@@ -1013,6 +1018,7 @@ long input_line2(FILE *fp, unsigned char *buff, unsigned char *buff2,
     const int fd = fileno(fp);
 
     buffer = buff;
+    if (buff2==NULL) buffer2 = xmalloc(buffsize); else buffer2 = buff2;
     first = last = pos;
 
     if (infile_enc[fd] == ENC_UNKNOWN) { /* just after opened */
@@ -1061,31 +1067,31 @@ long input_line2(FILE *fp, unsigned char *buff, unsigned char *buff2,
                 if (i == '@' || i == 'B') {
                     injis = true;
                 } else {               /* broken Kanji-in */
-                    buffer[last++] = ESC;
-                    buffer[last++] = '$';
+                    buffer[last] = ESC; buffer2[last++] = 0;
+                    buffer[last] = '$'; buffer2[last++] = 0;
                     if (is_tail(&i, fp)) break;
-                    buffer[last++] = i;
+                    buffer[last] = i;   buffer2[last++] = 0;
                 }
             } else if (i == '(') {     /* ESC '(' (Kanji-out) */
                 i = getc4(fp);
                 if (i == 'J' || i == 'B' || i == 'H') {
                     injis = false;
                 } else {               /* broken Kanji-out */
-                    buffer[last++] = ESC;
-                    buffer[last++] = '(';
+                    buffer[last] = ESC; buffer2[last++] = 0;
+                    buffer[last] = '('; buffer2[last++] = 0;
                     if (is_tail(&i, fp)) break;
-                    buffer[last++] = i;
+                    buffer[last] = i;   buffer2[last++] = 0;
                 }
             } else { /* broken ESC */
-                buffer[last++] = ESC;
+                buffer[last] = ESC; buffer2[last++] = 0;
                 if (is_tail(&i, fp)) break;
-                buffer[last++] = i;
+                buffer[last] = i;   buffer2[last++] = 0;
             }
         } else { /* rather than ESC */
             if (injis) { /* in JIS */
                 long j = getc4(fp);
                 if (is_tail(&j, fp)) {
-                    buffer[last++] = i;
+                    buffer[last] = i; buffer2[last++] = 0;
                     i = j;
                     break;
                 } else { /* JIS encoding */
@@ -1101,18 +1107,26 @@ long input_line2(FILE *fp, unsigned char *buff, unsigned char *buff2,
                 } else if (infile_enc[fd] == ENC_UTF8 && UTF8length(i) > 1) {
                     get_utf8(i, fp);
                 } else {
-                    buffer[last++] = i;
+                    buffer[last] = i; buffer2[last++] = 0;
                 }
             }
         }
     }
 
-    if (i != EOF || first != last) buffer[last] = '\0';
+    if (i != EOF || first != last) { buffer[last] = '\0'; buffer2[last] = 0; }
     if (i == EOF || i == '\n' || i == '\r') injis = false;
     if (lastchar != NULL) *lastchar = i;
 
-    if (buff2!= NULL) for (i=pos; i<=last; i++) buff2[i] = 0;
-    /* buff2 is initialized */
+#ifdef DEBUG
+    fprintf(stderr, "input_line2: ");
+    for (i=pos;i<=last;i++) {
+      int c = buffer[i]+256*buffer2[i];
+      if ((c<32)||(c>126)) fprintf(stderr, "[%3X]", c); else fprintf(stderr, "%c",c);
+    }
+    fprintf(stderr, "\n"); fflush(stderr);
+#endif /* DEBUG */
+
+    if (buff2==NULL) free(buffer2);
 
     return last;
 }
@@ -1220,16 +1234,17 @@ unsigned char *ptenc_from_utf8_string_to_internal_enc(const unsigned char *is)
     int i;
     long u = 0, j, len;
     int i1, i2, i3, i4;
-    unsigned char *buf, *buf_bak;
+    unsigned char *buf, *buf_bak, *buf2_bak;
     long first_bak, last_bak;
 
     if (terminal_enc != ENC_UTF8 || is_internalUPTEX()) return NULL;
-    buf_bak = buffer;
+    buf_bak = buffer; buf2_bak = buffer2;
     first_bak = first;
     last_bak = last;
 
     len = strlen(is)+1;
     buffer = buf = xmalloc(len);
+    buffer2 = xmalloc(len);
     first = last = 0;
 
     for (i=0; i<strlen(is); i++) {
@@ -1276,6 +1291,7 @@ unsigned char *ptenc_from_utf8_string_to_internal_enc(const unsigned char *is)
     buffer[last] = '\0';
  end:
     buffer = buf_bak;
+    free(buffer2); buffer2 = buf2_bak;
     first = first_bak;
     last = last_bak;
     return buf;
@@ -1286,16 +1302,17 @@ unsigned char *ptenc_from_internal_enc_string_to_utf8(const unsigned char *is)
     int i;
     long u = 0, len;
     int i1 = EOF, i2 = EOF;
-    unsigned char *buf, *buf_bak;
+    unsigned char *buf, *buf_bak, *buf2_bak;
     long first_bak, last_bak;
 
     if (terminal_enc != ENC_UTF8 || is_internalUPTEX()) return NULL;
-    buf_bak = buffer;
+    buf_bak = buffer; buf2_bak = buffer2;
     first_bak = first;
     last_bak = last;
 
     len = strlen(is)+1;
     buffer = buf = xmalloc(len*4);
+    buffer2 = xmalloc(len*4);
     first = last = 0;
 
     for (i=0; i<strlen(is); i++) {
@@ -1325,6 +1342,7 @@ unsigned char *ptenc_from_internal_enc_string_to_utf8(const unsigned char *is)
     buffer[last] = '\0';
  end:
     buffer = buf_bak;
+    free(buffer2); buffer2 = buf2_bak;
     first = first_bak;
     last = last_bak;
     return buf;
