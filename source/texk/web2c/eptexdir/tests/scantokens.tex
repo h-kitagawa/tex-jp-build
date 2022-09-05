@@ -1,0 +1,50 @@
+%#! eptex
+\font\x=ec-lmtt10 \x\obeylines
+
+^^e3^^81^^82.あ.^^a4^^a2.
+^^c2^^aa.ª.捉.
+% eptex, euptex:
+% ==> ãĄĆ.あ.ďć.
+% ==> Âł.Âł.捉.
+
+\medskip
+\def\X{\scantokens{
+^^e3^^81^^82.あ.^^a4^^a2.
+^^c2^^aa.ª.捉.
+\noexpand}}\X
+% eptex:
+% ==> (欧文).あ.あ
+% ==> 捉.捉.捉
+% euptex:
+% ==> あ.あ.(欧文)
+% ==> (欧文).(欧文).捉
+
+\ifdefined\enablecjktoken
+\medskip
+=== up\TeX{} ===
+{\kcatcode`あ=15
+\X
+% euptex:
+% ==> (欧文).(欧文).(欧文)
+% ==> (欧文).(欧文).捉
+
+^^e3^^81^^82.あ.^^a4^^a2.
+^^c2^^aa.ª.捉.
+% euptex:
+% ==> (欧文).(欧文).(欧文)
+% ==> (欧文).(欧文).捉
+
+\gdef\Y{\scantokens{
+^^e3^^81^^82.あ.^^a4^^a2.
+^^c2^^aa.ª.捉.
+\noexpand}}}
+
+\medskip
+\Y
+% euptex:
+% ==> あ.あ.(欧文)
+% ==> (欧文).(欧文).捉
+
+
+\fi
+\bye
